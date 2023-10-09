@@ -2,9 +2,6 @@ package com.gmail.nossr50.worldguard;
 
 import com.gmail.nossr50.mcMMO;
 import com.gmail.nossr50.util.LogUtils;
-import com.sk89q.worldguard.WorldGuard;
-import com.sk89q.worldguard.bukkit.WorldGuardPlugin;
-import com.sk89q.worldguard.protection.flags.registry.SimpleFlagRegistry;
 import org.bukkit.plugin.Plugin;
 
 import java.util.ArrayList;
@@ -12,39 +9,31 @@ import java.util.ArrayList;
 import static org.bukkit.Bukkit.getServer;
 
 public class WorldGuardUtils {
-    private static WorldGuardPlugin worldGuardPluginRef;
+    private static Plugin worldGuardPluginRef;
     private static boolean isLoaded = false;
     private static boolean detectedIncompatibleWG = false;
     private static final ArrayList<String> WGClassList;
 
     static {
-        /*
-            These are the classes mcMMO tries to hook into for WG support, if any of them are missing it is safe to consider WG is not compatible
-            com.sk89q.worldedit.bukkit.BukkitAdapter
-            com.sk89q.worldedit.bukkit.BukkitPlayer
-            com.sk89q.worldguard.WorldGuard
-            com.sk89q.worldguard.bukkit.WorldGuardPlugin
-            com.sk89q.worldguard.protection.flags.registry.FlagConflictException
-            com.sk89q.worldguard.protection.flags.registry.FlagRegistry
-            com.sk89q.worldguard.protection.regions.RegionContainer
-            com.sk89q.worldguard.protection.regions.RegionQuery
-         */
+        // These are the classes mcMMO tries to hook into for WG support, if any of them are missing it is safe to
+        // consider WG is not compatible
 
         WGClassList = new ArrayList<>();
+
         WGClassList.add("com.sk89q.worldedit.bukkit.BukkitAdapter");
         WGClassList.add("com.sk89q.worldedit.bukkit.BukkitPlayer");
         WGClassList.add("com.sk89q.worldguard.WorldGuard");
         WGClassList.add("com.sk89q.worldguard.bukkit.WorldGuardPlugin");
         WGClassList.add("com.sk89q.worldguard.protection.flags.registry.FlagConflictException");
         WGClassList.add("com.sk89q.worldguard.protection.flags.registry.FlagRegistry");
+        WGClassList.add("com.sk89q.worldguard.protection.flags.registry.SimpleFlagRegistry");
         WGClassList.add("com.sk89q.worldguard.protection.regions.RegionContainer");
         WGClassList.add("com.sk89q.worldguard.protection.regions.RegionQuery");
     }
 
     public static boolean isWorldGuardLoaded()
     {
-        if(detectedIncompatibleWG)
-            return false;
+        if (detectedIncompatibleWG) return false;
 
         worldGuardPluginRef = getWorldGuard();
 
@@ -56,11 +45,10 @@ public class WorldGuardUtils {
      * Results are cached
      * @return the instance of WG plugin, null if its not compatible or isn't present
      */
-    private static WorldGuardPlugin getWorldGuard()
+    private static Plugin getWorldGuard()
     {
         //WG plugin reference is already cached so just return it
-        if(isLoaded)
-            return worldGuardPluginRef;
+        if (isLoaded) return worldGuardPluginRef;
 
         //Grab WG if it exists
         Plugin plugin = getServer().getPluginManager().getPlugin("WorldGuard");
@@ -71,11 +59,11 @@ public class WorldGuardUtils {
             LogUtils.debug(mcMMO.p.getLogger(), "WorldGuard was not detected.");
         } else {
             //Check that its actually of class WorldGuardPlugin
-            if(plugin instanceof WorldGuardPlugin)
+            if(plugin instanceof com.sk89q.worldguard.bukkit.WorldGuardPlugin)
             {
-                if(isCompatibleVersion(plugin))
+                if (isCompatibleVersion(plugin))
                 {
-                    worldGuardPluginRef = (WorldGuardPlugin) plugin;
+                    worldGuardPluginRef = plugin;
                     isLoaded = true;
                 }
             } else {
@@ -119,8 +107,9 @@ public class WorldGuardUtils {
              * If WG appears to have all of its classes we can then check to see if its been initialized properly
              */
             try {
-                if(allClassesFound) {
-                    if(!((SimpleFlagRegistry) WorldGuard.getInstance().getFlagRegistry()).isInitialized()) {
+                if (allClassesFound) {
+                    // Do NOT import these classes at the top of the file, it will cause a NoClassDefFoundError if WG is not present
+                    if(!((com.sk89q.worldguard.protection.flags.registry.SimpleFlagRegistry) com.sk89q.worldguard.WorldGuard.getInstance().getFlagRegistry()).isInitialized()) {
                         markWGIncompatible();
                         mcMMO.p.getLogger().severe("WG did not initialize properly, this can cause errors with mcMMO so mcMMO is disabling certain features.");
                     }
